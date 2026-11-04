@@ -68,7 +68,7 @@
         </div>
       </div>
 
-      <div id="card-stat-confirmed" role="button" tabindex="0" aria-label="Tapis senarai sudah dimaklumkan" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 group">
+      <div id="card-stat-confirmed" role="button" tabindex="0" aria-label="Tapis senarai sudah dimaklumkan" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 select-none group">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 group-hover:text-emerald-700 transition-colors">Sudah Dimaklumkan</span>
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,7 +108,7 @@
 
         <div class="md:col-span-4">
           <label for="input-search" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Carian Sekolah / Kod</label>
-          <input type="text" id="input-search" list="school-list" placeholder="NAMA SEKOLAH ATAU KOD..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
+          <input type="text" id="input-search" list="school-list" autocomplete="off" placeholder="NAMA SEKOLAH ATAU KOD..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
           <datalist id="school-list"></datalist>
         </div>
 
@@ -135,7 +135,7 @@
         </svg>
       </div>
       <h3 class="text-sm font-semibold text-slate-800">Sedia Untuk Carian</h3>
-      <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Sila masukkan kata kunci carian pada kotak carian di atas untuk memaparkan senarai rekod institusi atau guru.</p>
+      <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Sila masukkan kata kunci carian pada kotak carian di atas atau klik mana-mana kad status untuk memaparkan senarai rekod institusi atau guru.</p>
     </div>
 
     <section id="section-table" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hidden" aria-label="Jadual Maklumat Guru dan Sekolah">
@@ -190,8 +190,8 @@
 
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <script src="config.js"></script>
-  <script src="idb-cache.js"></script>
-  <script src="app.js"></script>
+  <script src="config.js?v=2.2"></script>
+  <script src="idb-cache.js?v=2.2"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 </html>

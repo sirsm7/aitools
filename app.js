@@ -80,22 +80,44 @@
     elSyncIndicator.appendChild(textNode);
   }
 
+  function isConfirmedStatus(status) {
+    if (status === true || status === 1) return true;
+    if (typeof status === "string") {
+      const s = status.trim().toLowerCase();
+      return s === "true" || s === "1" || s === "ya" || s === "yes" || s === "sudah" || s === "selesai";
+    }
+    return false;
+  }
+
+  function setCardActive(active) {
+    if (!elCardConfirmed) return;
+    if (active) {
+      elCardConfirmed.classList.add("ring-2", "ring-emerald-500", "bg-emerald-50/50");
+      elCardConfirmed.classList.remove("bg-white");
+    } else {
+      elCardConfirmed.classList.remove("ring-2", "ring-emerald-500", "bg-emerald-50/50");
+      elCardConfirmed.classList.add("bg-white");
+    }
+  }
+
   function updateSchoolDatalist() {
     if (!elSchoolList) return;
     while (elSchoolList.firstChild) {
       elSchoolList.removeChild(elSchoolList.firstChild);
     }
 
-    const selectedPpd = elFilterPpd.value.trim().toLowerCase();
+    const selectedPpd = elFilterPpd ? elFilterPpd.value.trim().toLowerCase() : "";
     const uniqueSchools = new Map();
 
     for (let i = 0; i < allData.length; i++) {
       const item = allData[i];
-      if (selectedPpd && item.ppd.toLowerCase() !== selectedPpd) {
+      if (selectedPpd && item.ppd && item.ppd.toLowerCase() !== selectedPpd) {
         continue;
       }
-      if (item.nama_institusi && !uniqueSchools.has(item.nama_institusi)) {
-        uniqueSchools.set(item.nama_institusi, item.kodsekolah || "");
+      const schoolName = (item.nama_institusi || "").trim();
+      const schoolCode = (item.kodsekolah || "").trim();
+      if (schoolName && !uniqueSchools.has(schoolName)) {
+        uniqueSchools.set(schoolName, schoolCode);
       }
     }
 
@@ -105,10 +127,7 @@
     for (let i = 0; i < sortedSchools.length; i++) {
       const [name, kod] = sortedSchools[i];
       const option = document.createElement("option");
-      option.value = name;
-      if (kod) {
-        option.label = `${kod} - ${name}`;
-      }
+      option.value = kod ? `${kod} - ${name}` : name;
       fragment.appendChild(option);
     }
 
@@ -120,7 +139,7 @@
 
     if (!forceRemote) {
       const cached = await IDBCache.get("teachers_data_cache");
-      if (cached && cached.data && Array.isArray(cached.data)) {
+      if (cached && cached.data && Array.isArray(cached.data) && cached.data.length > 0) {
         allData = cached.data;
         updateSchoolDatalist();
         applyFilters();
@@ -170,7 +189,8 @@
     const selectedStatus = elFilterStatus.value;
 
     const hasSearchQuery = querySearch.length > 0 || queryTeacher.length > 0;
-    const shouldDisplayTable = hasSearchQuery || selectedStatus.length > 0;
+    const hasStatusFilter = selectedStatus.length > 0;
+    const shouldDisplayTable = hasSearchQuery || hasStatusFilter;
 
     if (elSectionTable && elSearchPrompt) {
       if (shouldDisplayTable) {
@@ -183,31 +203,36 @@
     }
 
     filteredData = allData.filter((item) => {
-      if (selectedPpd && item.ppd.toLowerCase() !== selectedPpd) {
+      if (selectedPpd && item.ppd && item.ppd.toLowerCase() !== selectedPpd) {
         return false;
       }
 
       if (querySearch) {
-        const matchName = item.nama_institusi.toLowerCase().includes(querySearch);
-        const matchKod = item.kodsekolah ? item.kodsekolah.toLowerCase().includes(querySearch) : false;
-        const matchCombined = `${item.kodsekolah || ""} - ${item.nama_institusi}`.toLowerCase().includes(querySearch);
-        if (!matchName && !matchKod && !matchCombined) {
+        const itemKod = (item.kodsekolah || "").toLowerCase();
+        const itemInst = (item.nama_institusi || "").toLowerCase();
+        const itemCombined = `${itemKod} - ${itemInst}`;
+        const matchKod = itemKod ? itemKod.includes(querySearch) : false;
+        const matchName = itemInst ? itemInst.includes(querySearch) : false;
+        const matchCombined = itemCombined.includes(querySearch);
+        const matchQueryInItem = querySearch.includes(itemKod) || querySearch.includes(itemInst);
+        if (!matchKod && !matchName && !matchCombined && !matchQueryInItem) {
           return false;
         }
       }
 
       if (queryTeacher) {
-        const matchTeacherName = item.name.toLowerCase().includes(queryTeacher);
-        const matchEmail = item.email.toLowerCase().includes(queryTeacher);
-        if (!matchTeacherName && !matchEmail) {
+        const itemTeacher = (item.name || "").toLowerCase();
+        const itemEmail = (item.email || "").toLowerCase();
+        if (!itemTeacher.includes(queryTeacher) && !itemEmail.includes(queryTeacher)) {
           return false;
         }
       }
 
-      if (selectedStatus === "done" && !item.status_pemakluman) {
+      const isItemConfirmed = isConfirmedStatus(item.status_pemakluman);
+      if (selectedStatus === "done" && !isItemConfirmed) {
         return false;
       }
-      if (selectedStatus === "pending" && item.status_pemakluman) {
+      if (selectedStatus === "pending" && isItemConfirmed) {
         return false;
       }
 
@@ -228,7 +253,7 @@
       if (row.kodsekolah) {
         uniqueSchools.add(row.kodsekolah);
       }
-      if (row.status_pemakluman === true) {
+      if (isConfirmedStatus(row.status_pemakluman)) {
         confirmedCount++;
       }
     }
@@ -284,7 +309,7 @@
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.className = "w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer";
-      checkbox.checked = Boolean(item.status_pemakluman);
+      checkbox.checked = isConfirmedStatus(item.status_pemakluman);
       checkbox.setAttribute("data-email", item.email);
       checkbox.addEventListener("change", handleStatusChange);
       tdAction.appendChild(checkbox);
@@ -394,29 +419,27 @@
     }
   }
 
-  function handleAutoCapsInput(event) {
-    const target = event.target;
-    const start = target.selectionStart;
-    const end = target.selectionEnd;
-    target.value = target.value.toUpperCase();
-    target.setSelectionRange(start, end);
-  }
-
-  function triggerConfirmedFilter() {
+  function handleCardConfirmedClick() {
     if (!elFilterStatus) return;
-    elFilterStatus.value = "done";
+    if (elFilterStatus.value === "done") {
+      elFilterStatus.value = "";
+      setCardActive(false);
+    } else {
+      elFilterStatus.value = "done";
+      setCardActive(true);
+    }
     applyFilters();
-    if (elSectionTable) {
+    if (elFilterStatus.value === "done" && elSectionTable) {
       elSectionTable.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
 
   if (elCardConfirmed) {
-    elCardConfirmed.addEventListener("click", triggerConfirmedFilter);
+    elCardConfirmed.addEventListener("click", handleCardConfirmedClick);
     elCardConfirmed.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        triggerConfirmedFilter();
+        handleCardConfirmedClick();
       }
     });
   }
@@ -426,7 +449,10 @@
     applyFilters();
   });
 
-  elFilterStatus.addEventListener("change", applyFilters);
+  elFilterStatus.addEventListener("change", () => {
+    setCardActive(elFilterStatus.value === "done");
+    applyFilters();
+  });
 
   let searchTimeout = null;
   function handleSearchDebounce() {
@@ -434,15 +460,8 @@
     searchTimeout = setTimeout(applyFilters, 150);
   }
 
-  elInputSearch.addEventListener("input", (event) => {
-    handleAutoCapsInput(event);
-    handleSearchDebounce();
-  });
-
-  elInputTeacherSearch.addEventListener("input", (event) => {
-    handleAutoCapsInput(event);
-    handleSearchDebounce();
-  });
+  elInputSearch.addEventListener("input", handleSearchDebounce);
+  elInputTeacherSearch.addEventListener("input", handleSearchDebounce);
 
   if (elBtnReset) {
     elBtnReset.addEventListener("click", () => {
@@ -450,6 +469,7 @@
       elInputSearch.value = "";
       elInputTeacherSearch.value = "";
       elFilterStatus.value = "";
+      setCardActive(false);
       updateSchoolDatalist();
       applyFilters();
     });
