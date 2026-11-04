@@ -18,8 +18,10 @@
 
   const elFilterPpd = document.getElementById("filter-ppd");
   const elInputSearch = document.getElementById("input-search");
+  const elSchoolList = document.getElementById("school-list");
   const elInputTeacherSearch = document.getElementById("input-teacher-search");
   const elFilterStatus = document.getElementById("filter-status");
+  const elBtnReset = document.getElementById("btn-reset");
 
   const elSectionTable = document.getElementById("section-table");
   const elSearchPrompt = document.getElementById("search-prompt");
@@ -77,6 +79,41 @@
     elSyncIndicator.appendChild(textNode);
   }
 
+  function updateSchoolDatalist() {
+    if (!elSchoolList) return;
+    while (elSchoolList.firstChild) {
+      elSchoolList.removeChild(elSchoolList.firstChild);
+    }
+
+    const selectedPpd = elFilterPpd.value.trim().toLowerCase();
+    const uniqueSchools = new Map();
+
+    for (let i = 0; i < allData.length; i++) {
+      const item = allData[i];
+      if (selectedPpd && item.ppd.toLowerCase() !== selectedPpd) {
+        continue;
+      }
+      if (item.nama_institusi && !uniqueSchools.has(item.nama_institusi)) {
+        uniqueSchools.set(item.nama_institusi, item.kodsekolah || "");
+      }
+    }
+
+    const sortedSchools = Array.from(uniqueSchools.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const fragment = document.createDocumentFragment();
+
+    for (let i = 0; i < sortedSchools.length; i++) {
+      const [name, kod] = sortedSchools[i];
+      const option = document.createElement("option");
+      option.value = name;
+      if (kod) {
+        option.label = `${kod} - ${name}`;
+      }
+      fragment.appendChild(option);
+    }
+
+    elSchoolList.appendChild(fragment);
+  }
+
   async function fetchData(forceRemote = false) {
     setSyncStatus("syncing", "Menyegerak data...");
 
@@ -84,6 +121,7 @@
       const cached = await IDBCache.get("teachers_data_cache");
       if (cached && cached.data && Array.isArray(cached.data)) {
         allData = cached.data;
+        updateSchoolDatalist();
         applyFilters();
         setSyncStatus("ready", "Data Tempatan");
         if (cached.isStale) {
@@ -111,6 +149,7 @@
       if (result.status === "success" && Array.isArray(result.data)) {
         allData = result.data;
         await IDBCache.set("teachers_data_cache", allData);
+        updateSchoolDatalist();
         applyFilters();
         setSyncStatus("ready", "Terkini");
       } else {
@@ -148,8 +187,9 @@
 
       if (querySearch) {
         const matchName = item.nama_institusi.toLowerCase().includes(querySearch);
-        const matchKod = item.kodsekolah.toLowerCase().includes(querySearch);
-        if (!matchName && !matchKod) {
+        const matchKod = item.kodsekolah ? item.kodsekolah.toLowerCase().includes(querySearch) : false;
+        const matchCombined = `${item.kodsekolah || ""} - ${item.nama_institusi}`.toLowerCase().includes(querySearch);
+        if (!matchName && !matchKod && !matchCombined) {
           return false;
         }
       }
@@ -352,7 +392,19 @@
     }
   }
 
-  elFilterPpd.addEventListener("change", applyFilters);
+  function handleAutoCapsInput(event) {
+    const target = event.target;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    target.value = target.value.toUpperCase();
+    target.setSelectionRange(start, end);
+  }
+
+  elFilterPpd.addEventListener("change", () => {
+    updateSchoolDatalist();
+    applyFilters();
+  });
+
   elFilterStatus.addEventListener("change", applyFilters);
 
   let searchTimeout = null;
@@ -361,8 +413,26 @@
     searchTimeout = setTimeout(applyFilters, 150);
   }
 
-  elInputSearch.addEventListener("input", handleSearchDebounce);
-  elInputTeacherSearch.addEventListener("input", handleSearchDebounce);
+  elInputSearch.addEventListener("input", (event) => {
+    handleAutoCapsInput(event);
+    handleSearchDebounce();
+  });
+
+  elInputTeacherSearch.addEventListener("input", (event) => {
+    handleAutoCapsInput(event);
+    handleSearchDebounce();
+  });
+
+  if (elBtnReset) {
+    elBtnReset.addEventListener("click", () => {
+      elFilterPpd.value = "";
+      elInputSearch.value = "";
+      elInputTeacherSearch.value = "";
+      elFilterStatus.value = "";
+      updateSchoolDatalist();
+      applyFilters();
+    });
+  }
 
   elBtnPrev.addEventListener("click", () => {
     if (currentPage > 1) {

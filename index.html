@@ -85,8 +85,12 @@
       </div>
     </section>
 
-    <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4" aria-label="Penapis & Carian">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+    <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 relative" aria-label="Penapis & Carian">
+      <button id="btn-reset" class="absolute top-4 right-5 text-xs font-semibold text-slate-500 hover:text-slate-800 underline decoration-slate-300 underline-offset-2 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded px-1">
+        Set Semula
+      </button>
+      
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mt-2">
         <div class="md:col-span-3">
           <label for="filter-ppd" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Peringkat PPD</label>
           <select id="filter-ppd" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
@@ -99,12 +103,13 @@
 
         <div class="md:col-span-4">
           <label for="input-search" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Carian Sekolah / Kod</label>
-          <input type="text" id="input-search" placeholder="Nama sekolah atau kod (cth: MBA0001)..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
+          <input type="text" id="input-search" list="school-list" placeholder="NAMA SEKOLAH ATAU KOD..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
+          <datalist id="school-list"></datalist>
         </div>
 
         <div class="md:col-span-3">
           <label for="input-teacher-search" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Carian Guru / E-mel</label>
-          <input type="text" id="input-teacher-search" placeholder="Nama atau e-mel guru..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
+          <input type="text" id="input-teacher-search" placeholder="NAMA ATAU E-MEL GURU..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
         </div>
 
         <div class="md:col-span-2">
