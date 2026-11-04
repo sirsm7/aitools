@@ -5,7 +5,7 @@
   let allData = [];
   let filteredData = [];
   let currentPage = 1;
-  const pageSize = 20;
+  const pageSize = 30;
 
   const elSyncIndicator = document.getElementById("sync-indicator");
   const elBtnRefresh = document.getElementById("btn-refresh");
@@ -21,6 +21,8 @@
   const elInputTeacherSearch = document.getElementById("input-teacher-search");
   const elFilterStatus = document.getElementById("filter-status");
 
+  const elSectionTable = document.getElementById("section-table");
+  const elSearchPrompt = document.getElementById("search-prompt");
   const elTableBody = document.getElementById("table-body");
   const elTableCountLabel = document.getElementById("table-count-label");
   const elPaginationInfo = document.getElementById("pagination-info");
@@ -126,6 +128,18 @@
     const querySearch = elInputSearch.value.trim().toLowerCase();
     const queryTeacher = elInputTeacherSearch.value.trim().toLowerCase();
     const selectedStatus = elFilterStatus.value;
+
+    const hasSearchQuery = querySearch.length > 0 || queryTeacher.length > 0;
+
+    if (elSectionTable && elSearchPrompt) {
+      if (hasSearchQuery) {
+        elSectionTable.classList.remove("hidden");
+        elSearchPrompt.classList.add("hidden");
+      } else {
+        elSectionTable.classList.add("hidden");
+        elSearchPrompt.classList.remove("hidden");
+      }
+    }
 
     filteredData = allData.filter((item) => {
       if (selectedPpd && item.ppd.toLowerCase() !== selectedPpd) {

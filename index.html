@@ -4,15 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Papan Pemuka Semakan & Tindakan Sekolah</title>
+  <link rel="icon" type="image/png" href="icoppdag.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
 
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div>
-        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Papan Pemuka Pemakluman E-mel Sekolah</h1>
-        <p class="text-sm text-slate-500 mt-1">Sistem Semakan & Pengesahan Tindakan Guru PPD Melaka</p>
+      <div class="flex items-center gap-3">
+        <img src="icoppdag.png" alt="Logo PPD" class="w-10 h-10 object-contain">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Papan Pemuka Pemakluman E-mel Sekolah</h1>
+          <p class="text-sm text-slate-500 mt-0.5">Sistem Semakan & Pengesahan Tindakan Guru PPD Melaka</p>
+        </div>
       </div>
       <div class="flex items-center gap-3">
         <span id="sync-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
@@ -30,23 +53,23 @@
 
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Kad Skor Ringkasan">
       <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-        <span class="text-xs font-medium uppercase tracking-wider text-slate-500">Jumlah Sekolah</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Jumlah Sekolah</span>
         <div class="mt-2 flex items-baseline gap-2">
           <span id="stat-total-schools" class="text-3xl font-extrabold text-slate-900">0</span>
-          <span class="text-xs text-slate-400">institusi</span>
+          <span class="text-xs text-slate-400 font-medium">institusi</span>
         </div>
       </div>
 
       <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-        <span class="text-xs font-medium uppercase tracking-wider text-slate-500">Jumlah Guru Terlibat</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Jumlah Guru Terlibat</span>
         <div class="mt-2 flex items-baseline gap-2">
           <span id="stat-total-emails" class="text-3xl font-extrabold text-indigo-600">0</span>
-          <span class="text-xs text-slate-400">rekod</span>
+          <span class="text-xs text-slate-400 font-medium">rekod</span>
         </div>
       </div>
 
       <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-        <span class="text-xs font-medium uppercase tracking-wider text-slate-500">Sudah Dimaklumkan</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Sudah Dimaklumkan</span>
         <div class="mt-2 flex items-baseline gap-2">
           <span id="stat-total-confirmed" class="text-3xl font-extrabold text-emerald-600">0</span>
           <span id="stat-percent-confirmed" class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">0%</span>
@@ -54,10 +77,10 @@
       </div>
 
       <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-        <span class="text-xs font-medium uppercase tracking-wider text-slate-500">Belum Selesai</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Belum Selesai</span>
         <div class="mt-2 flex items-baseline gap-2">
           <span id="stat-total-pending" class="text-3xl font-extrabold text-amber-600">0</span>
-          <span class="text-xs text-slate-400">perlu tindakan</span>
+          <span class="text-xs text-slate-400 font-medium">perlu tindakan</span>
         </div>
       </div>
     </section>
@@ -65,7 +88,7 @@
     <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4" aria-label="Penapis & Carian">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
         <div class="md:col-span-3">
-          <label for="filter-ppd" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Peringkat PPD</label>
+          <label for="filter-ppd" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Peringkat PPD</label>
           <select id="filter-ppd" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
             <option value="">Semua PPD (Keseluruhan)</option>
             <option value="PPD ALOR GAJAH">PPD ALOR GAJAH</option>
@@ -75,17 +98,17 @@
         </div>
 
         <div class="md:col-span-4">
-          <label for="input-search" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Carian Sekolah / Kod</label>
+          <label for="input-search" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Carian Sekolah / Kod</label>
           <input type="text" id="input-search" placeholder="Nama sekolah atau kod (cth: MBA0001)..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
         </div>
 
         <div class="md:col-span-3">
-          <label for="input-teacher-search" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Carian Guru / E-mel</label>
+          <label for="input-teacher-search" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Carian Guru / E-mel</label>
           <input type="text" id="input-teacher-search" placeholder="Nama atau e-mel guru..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
         </div>
 
         <div class="md:col-span-2">
-          <label for="filter-status" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Status Tindakan</label>
+          <label for="filter-status" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Status Tindakan</label>
           <select id="filter-status" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
             <option value="">Semua Status</option>
             <option value="done">Selesai</option>
@@ -95,7 +118,17 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col" aria-label="Jadual Maklumat Guru dan Sekolah">
+    <div id="search-prompt" class="bg-white rounded-xl border border-slate-200 border-dashed p-10 text-center">
+      <div class="mx-auto w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <h3 class="text-sm font-semibold text-slate-800">Sedia Untuk Carian</h3>
+      <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Sila masukkan kata kunci carian pada kotak carian di atas untuk memaparkan senarai rekod institusi atau guru.</p>
+    </div>
+
+    <section id="section-table" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hidden" aria-label="Jadual Maklumat Guru dan Sekolah">
       <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-slate-50/50">
         <span id="table-count-label" class="text-xs font-semibold text-slate-600">Memuatkan data rekod...</span>
         <span class="text-xs text-slate-400">Tanda kotak untuk kemas kini langsung ke Google Sheets</span>
