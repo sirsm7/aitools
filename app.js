@@ -80,44 +80,22 @@
     elSyncIndicator.appendChild(textNode);
   }
 
-  function isConfirmedStatus(status) {
-    if (status === true || status === 1) return true;
-    if (typeof status === "string") {
-      const s = status.trim().toLowerCase();
-      return s === "true" || s === "1" || s === "ya" || s === "yes" || s === "sudah" || s === "selesai";
-    }
-    return false;
-  }
-
-  function setCardActive(active) {
-    if (!elCardConfirmed) return;
-    if (active) {
-      elCardConfirmed.classList.add("ring-2", "ring-emerald-500", "bg-emerald-50/50");
-      elCardConfirmed.classList.remove("bg-white");
-    } else {
-      elCardConfirmed.classList.remove("ring-2", "ring-emerald-500", "bg-emerald-50/50");
-      elCardConfirmed.classList.add("bg-white");
-    }
-  }
-
   function updateSchoolDatalist() {
     if (!elSchoolList) return;
     while (elSchoolList.firstChild) {
       elSchoolList.removeChild(elSchoolList.firstChild);
     }
 
-    const selectedPpd = elFilterPpd ? elFilterPpd.value.trim().toLowerCase() : "";
+    const selectedPpd = elFilterPpd.value.trim().toLowerCase();
     const uniqueSchools = new Map();
 
     for (let i = 0; i < allData.length; i++) {
       const item = allData[i];
-      if (selectedPpd && item.ppd && item.ppd.toLowerCase() !== selectedPpd) {
+      if (selectedPpd && item.ppd.toLowerCase() !== selectedPpd) {
         continue;
       }
-      const schoolName = (item.nama_institusi || "").trim();
-      const schoolCode = (item.kodsekolah || "").trim();
-      if (schoolName && !uniqueSchools.has(schoolName)) {
-        uniqueSchools.set(schoolName, schoolCode);
+      if (item.nama_institusi && !uniqueSchools.has(item.nama_institusi)) {
+        uniqueSchools.set(item.nama_institusi, item.kodsekolah || "");
       }
     }
 
@@ -127,7 +105,10 @@
     for (let i = 0; i < sortedSchools.length; i++) {
       const [name, kod] = sortedSchools[i];
       const option = document.createElement("option");
-      option.value = kod ? `${kod} - ${name}` : name;
+      option.value = name;
+      if (kod) {
+        option.label = `${kod} - ${name}`;
+      }
       fragment.appendChild(option);
     }
 
@@ -139,7 +120,7 @@
 
     if (!forceRemote) {
       const cached = await IDBCache.get("teachers_data_cache");
-      if (cached && cached.data && Array.isArray(cached.data) && cached.data.length > 0) {
+      if (cached && cached.data && Array.isArray(cached.data)) {
         allData = cached.data;
         updateSchoolDatalist();
         applyFilters();
@@ -177,7 +158,15 @@
         showToast("Gagal membaca struktur data pelayan", "error");
       }
     } catch (err) {
-      setSyncStatus("error", "Luar Talian");
+      const cached = await IDBCache.get("teachers_data_cache");
+      if (cached && cached.data && Array.isArray(cached.data) && allData.length === 0) {
+        allData = cached.data;
+        updateSchoolDatalist();
+        applyFilters();
+        setSyncStatus("ready", "Data Tempatan");
+      } else {
+        setSyncStatus("error", "Luar Talian");
+      }
       showToast("Gagal berhubung dengan pelayan Google Sheets", "error");
     }
   }
@@ -189,8 +178,7 @@
     const selectedStatus = elFilterStatus.value;
 
     const hasSearchQuery = querySearch.length > 0 || queryTeacher.length > 0;
-    const hasStatusFilter = selectedStatus.length > 0;
-    const shouldDisplayTable = hasSearchQuery || hasStatusFilter;
+    const shouldDisplayTable = hasSearchQuery || selectedStatus.length > 0;
 
     if (elSectionTable && elSearchPrompt) {
       if (shouldDisplayTable) {
@@ -203,36 +191,31 @@
     }
 
     filteredData = allData.filter((item) => {
-      if (selectedPpd && item.ppd && item.ppd.toLowerCase() !== selectedPpd) {
+      if (selectedPpd && item.ppd.toLowerCase() !== selectedPpd) {
         return false;
       }
 
       if (querySearch) {
-        const itemKod = (item.kodsekolah || "").toLowerCase();
-        const itemInst = (item.nama_institusi || "").toLowerCase();
-        const itemCombined = `${itemKod} - ${itemInst}`;
-        const matchKod = itemKod ? itemKod.includes(querySearch) : false;
-        const matchName = itemInst ? itemInst.includes(querySearch) : false;
-        const matchCombined = itemCombined.includes(querySearch);
-        const matchQueryInItem = querySearch.includes(itemKod) || querySearch.includes(itemInst);
-        if (!matchKod && !matchName && !matchCombined && !matchQueryInItem) {
+        const matchName = item.nama_institusi.toLowerCase().includes(querySearch);
+        const matchKod = item.kodsekolah ? item.kodsekolah.toLowerCase().includes(querySearch) : false;
+        const matchCombined = `${item.kodsekolah || ""} - ${item.nama_institusi}`.toLowerCase().includes(querySearch);
+        if (!matchName && !matchKod && !matchCombined) {
           return false;
         }
       }
 
       if (queryTeacher) {
-        const itemTeacher = (item.name || "").toLowerCase();
-        const itemEmail = (item.email || "").toLowerCase();
-        if (!itemTeacher.includes(queryTeacher) && !itemEmail.includes(queryTeacher)) {
+        const matchTeacherName = item.name.toLowerCase().includes(queryTeacher);
+        const matchEmail = item.email.toLowerCase().includes(queryTeacher);
+        if (!matchTeacherName && !matchEmail) {
           return false;
         }
       }
 
-      const isItemConfirmed = isConfirmedStatus(item.status_pemakluman);
-      if (selectedStatus === "done" && !isItemConfirmed) {
+      if (selectedStatus === "done" && !item.status_pemakluman) {
         return false;
       }
-      if (selectedStatus === "pending" && isItemConfirmed) {
+      if (selectedStatus === "pending" && item.status_pemakluman) {
         return false;
       }
 
@@ -253,7 +236,7 @@
       if (row.kodsekolah) {
         uniqueSchools.add(row.kodsekolah);
       }
-      if (isConfirmedStatus(row.status_pemakluman)) {
+      if (row.status_pemakluman === true) {
         confirmedCount++;
       }
     }
@@ -309,7 +292,7 @@
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.className = "w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer";
-      checkbox.checked = isConfirmedStatus(item.status_pemakluman);
+      checkbox.checked = Boolean(item.status_pemakluman);
       checkbox.setAttribute("data-email", item.email);
       checkbox.addEventListener("change", handleStatusChange);
       tdAction.appendChild(checkbox);
@@ -419,27 +402,29 @@
     }
   }
 
-  function handleCardConfirmedClick() {
+  function handleAutoCapsInput(event) {
+    const target = event.target;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    target.value = target.value.toUpperCase();
+    target.setSelectionRange(start, end);
+  }
+
+  function triggerConfirmedFilter() {
     if (!elFilterStatus) return;
-    if (elFilterStatus.value === "done") {
-      elFilterStatus.value = "";
-      setCardActive(false);
-    } else {
-      elFilterStatus.value = "done";
-      setCardActive(true);
-    }
+    elFilterStatus.value = "done";
     applyFilters();
-    if (elFilterStatus.value === "done" && elSectionTable) {
+    if (elSectionTable) {
       elSectionTable.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
 
   if (elCardConfirmed) {
-    elCardConfirmed.addEventListener("click", handleCardConfirmedClick);
+    elCardConfirmed.addEventListener("click", triggerConfirmedFilter);
     elCardConfirmed.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        handleCardConfirmedClick();
+        triggerConfirmedFilter();
       }
     });
   }
@@ -449,10 +434,7 @@
     applyFilters();
   });
 
-  elFilterStatus.addEventListener("change", () => {
-    setCardActive(elFilterStatus.value === "done");
-    applyFilters();
-  });
+  elFilterStatus.addEventListener("change", applyFilters);
 
   let searchTimeout = null;
   function handleSearchDebounce() {
@@ -460,8 +442,15 @@
     searchTimeout = setTimeout(applyFilters, 150);
   }
 
-  elInputSearch.addEventListener("input", handleSearchDebounce);
-  elInputTeacherSearch.addEventListener("input", handleSearchDebounce);
+  elInputSearch.addEventListener("input", (event) => {
+    handleAutoCapsInput(event);
+    handleSearchDebounce();
+  });
+
+  elInputTeacherSearch.addEventListener("input", (event) => {
+    handleAutoCapsInput(event);
+    handleSearchDebounce();
+  });
 
   if (elBtnReset) {
     elBtnReset.addEventListener("click", () => {
@@ -469,7 +458,6 @@
       elInputSearch.value = "";
       elInputTeacherSearch.value = "";
       elFilterStatus.value = "";
-      setCardActive(false);
       updateSchoolDatalist();
       applyFilters();
     });
@@ -494,5 +482,17 @@
     fetchData(true);
   });
 
-  fetchData(false);
+  const SESSION_KEY = "dashboard_session_active";
+  let isSessionActive = false;
+
+  try {
+    isSessionActive = Boolean(sessionStorage.getItem(SESSION_KEY));
+    if (!isSessionActive) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+    }
+  } catch (err) {
+    isSessionActive = false;
+  }
+
+  fetchData(!isSessionActive);
 })();
