@@ -10,6 +10,7 @@
   const elSyncIndicator = document.getElementById("sync-indicator");
   const elBtnRefresh = document.getElementById("btn-refresh");
 
+  const elCardConfirmed = document.getElementById("card-stat-confirmed");
   const elStatSchools = document.getElementById("stat-total-schools");
   const elStatEmails = document.getElementById("stat-total-emails");
   const elStatConfirmed = document.getElementById("stat-total-confirmed");
@@ -169,9 +170,10 @@
     const selectedStatus = elFilterStatus.value;
 
     const hasSearchQuery = querySearch.length > 0 || queryTeacher.length > 0;
+    const shouldDisplayTable = hasSearchQuery || selectedStatus.length > 0;
 
     if (elSectionTable && elSearchPrompt) {
-      if (hasSearchQuery) {
+      if (shouldDisplayTable) {
         elSectionTable.classList.remove("hidden");
         elSearchPrompt.classList.add("hidden");
       } else {
@@ -398,6 +400,25 @@
     const end = target.selectionEnd;
     target.value = target.value.toUpperCase();
     target.setSelectionRange(start, end);
+  }
+
+  function triggerConfirmedFilter() {
+    if (!elFilterStatus) return;
+    elFilterStatus.value = "done";
+    applyFilters();
+    if (elSectionTable) {
+      elSectionTable.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  if (elCardConfirmed) {
+    elCardConfirmed.addEventListener("click", triggerConfirmedFilter);
+    elCardConfirmed.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        triggerConfirmedFilter();
+      }
+    });
   }
 
   elFilterPpd.addEventListener("change", () => {
