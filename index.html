@@ -68,7 +68,7 @@
         </div>
       </div>
 
-      <div id="card-stat-confirmed" role="button" tabindex="0" aria-label="Tapis senarai sudah dimaklumkan" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 select-none group">
+      <div id="card-stat-confirmed" role="button" tabindex="0" aria-label="Papar senarai sekolah sudah dimaklumkan" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 select-none group">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 group-hover:text-emerald-700 transition-colors">Sudah Dimaklumkan</span>
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -81,11 +81,16 @@
         </div>
       </div>
 
-      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Belum Selesai</span>
+      <div id="card-stat-pending" role="button" tabindex="0" aria-label="Salin senarai sekolah belum selesai ke papan keratan" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer hover:border-amber-300 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 select-none group">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 group-hover:text-amber-700 transition-colors">Belum Selesai</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 group-hover:text-amber-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </div>
         <div class="mt-2 flex items-baseline gap-2">
           <span id="stat-total-pending" class="text-3xl font-extrabold text-amber-600">0</span>
-          <span class="text-xs text-slate-400 font-medium">perlu tindakan</span>
+          <span class="text-xs text-slate-400 font-medium">perlu tindakan (salin)</span>
         </div>
       </div>
     </section>
@@ -140,14 +145,17 @@
 
     <section id="section-table" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hidden" aria-label="Jadual Maklumat Guru dan Sekolah">
       <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-slate-50/50">
-        <span id="table-count-label" class="text-xs font-semibold text-slate-600">Memuatkan data rekod...</span>
-        <span class="text-xs text-slate-400">Tanda kotak untuk kemas kini langsung ke Google Sheets</span>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span id="table-count-label" class="text-xs font-semibold text-slate-600">Memuatkan data rekod...</span>
+          <span id="badge-view-mode" class="hidden px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">Senarai Sekolah Terlibat</span>
+        </div>
+        <span id="table-sub-label" class="text-xs text-slate-400">Tanda kotak untuk kemas kini langsung ke Google Sheets</span>
       </div>
 
       <div class="overflow-x-auto w-full">
         <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead class="bg-slate-100 text-slate-700 font-semibold text-xs uppercase tracking-wider">
-            <tr>
+          <thead id="table-head" class="bg-slate-100 text-slate-700 font-semibold text-xs uppercase tracking-wider">
+            <tr id="table-head-row">
               <th scope="col" class="py-3.5 px-4 w-16 text-center">Tindakan</th>
               <th scope="col" class="py-3.5 px-4">Nama Guru</th>
               <th scope="col" class="py-3.5 px-4">E-mel Delima</th>
@@ -190,8 +198,8 @@
 
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <script src="config.js?v=2.2"></script>
-  <script src="idb-cache.js?v=2.2"></script>
-  <script src="app.js?v=2.2"></script>
+  <script src="config.js?v=2.3"></script>
+  <script src="idb-cache.js?v=2.3"></script>
+  <script src="app.js?v=2.3"></script>
 </body>
 </html>
