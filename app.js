@@ -653,6 +653,33 @@
     }
   }
 
+  function isSecondarySchool(code, name) {
+    const c = (code || "").toUpperCase().trim();
+    const n = (name || "").toUpperCase().trim();
+
+    if (c.length >= 2) {
+      const secondChar = c.charAt(1);
+      if (secondChar === "E" || secondChar === "F") return true;
+      if (secondChar === "B" || secondChar === "C") return false;
+    }
+
+    if (
+      n.startsWith("SMK") ||
+      n.startsWith("SMA") ||
+      n.startsWith("SM ") ||
+      n.startsWith("SMJK") ||
+      n.includes("SEKOLAH MENENGAH") ||
+      n.includes("KOLEJ") ||
+      n.includes("IMTIAZ") ||
+      n.includes("VOKASIONAL") ||
+      n.includes("TEKNIK")
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
   async function copyPendingSchoolsList() {
     const selectedPpd = elFilterPpd.value.trim().toLowerCase();
     const uniquePendingSchools = new Map();
@@ -667,30 +694,72 @@
         uniquePendingSchools.set(key, {
           kodsekolah: item.kodsekolah ? item.kodsekolah.trim() : "",
           nama_institusi: item.nama_institusi ? item.nama_institusi.trim() : "",
-          ppd: item.ppd ? item.ppd.trim() : ""
+          ppd: item.ppd ? item.ppd.trim() : "",
+          order: i
         });
       }
     }
 
-    const pendingList = Array.from(uniquePendingSchools.values()).sort((a, b) => {
-      const cmpPpd = a.ppd.localeCompare(b.ppd);
-      if (cmpPpd !== 0) return cmpPpd;
-      return a.nama_institusi.localeCompare(b.nama_institusi);
-    });
+    const pendingList = Array.from(uniquePendingSchools.values());
 
     if (pendingList.length === 0) {
       showToast("Tiada sekolah yang belum selesai pemakluman.", "info");
       return;
     }
 
-    const headerText = "SENARAI SEKOLAH BELUM SELESAI PEMAKLUMAN SEMAKAN AI-TOOLS";
-    const bodyLines = pendingList.map((sch, idx) => {
-      const kodPart = sch.kodsekolah ? `${sch.kodsekolah} - ` : "";
-      const ppdPart = sch.ppd ? ` (${sch.ppd})` : "";
-      return `${idx + 1}. ${kodPart}${sch.nama_institusi}${ppdPart}`;
-    });
+    if (!selectedPpd) {
+      pendingList.sort((a, b) => {
+        const cmpPpd = a.ppd.localeCompare(b.ppd);
+        if (cmpPpd !== 0) return cmpPpd;
+        return a.order - b.order;
+      });
+    } else {
+      pendingList.sort((a, b) => a.order - b.order);
+    }
 
-    const fullMessage = `${headerText}\n\n${bodyLines.join("\n")}`;
+    const primaryList = [];
+    const secondaryList = [];
+
+    for (let i = 0; i < pendingList.length; i++) {
+      const sch = pendingList[i];
+      if (isSecondarySchool(sch.kodsekolah, sch.nama_institusi)) {
+        secondaryList.push(sch);
+      } else {
+        primaryList.push(sch);
+      }
+    }
+
+    const lines = [];
+    lines.push("📋 SENARAI SEKOLAH BELUM SELESAI PEMAKLUMAN SEMAKAN AI TOOLS");
+    lines.push(`📌 JUMLAH KESELURUHAN: ${pendingList.length} BUAH SEKOLAH`);
+
+    if (primaryList.length > 0) {
+      lines.push("━━━━━━━━━━━━━━━━━━");
+      lines.push("1. 🏫 SEKOLAH RENDAH");
+      lines.push(`: ${primaryList.length} buah sekolah`);
+      lines.push("━━━━━━━━━━━━━━━━━━");
+      for (let i = 0; i < primaryList.length; i++) {
+        const sch = primaryList[i];
+        const kod = sch.kodsekolah ? sch.kodsekolah : "-";
+        lines.push(`${kod} – ${sch.nama_institusi}`);
+      }
+    }
+
+    if (secondaryList.length > 0) {
+      lines.push("━━━━━━━━━━━━━━━━━━");
+      lines.push(`🏢 2. SEKOLAH MENENGAH: ${secondaryList.length} buah sekolah`);
+      lines.push("━━━━━━━━━━━━━━━━━━");
+      for (let i = 0; i < secondaryList.length; i++) {
+        const sch = secondaryList[i];
+        const kod = sch.kodsekolah ? sch.kodsekolah : "-";
+        lines.push(`${kod} – ${sch.nama_institusi}`);
+      }
+    }
+
+    lines.push("━━━━━━━━━━━━━━━━━━");
+    lines.push("Terima kasih atas kerjasama semua.");
+
+    const fullMessage = lines.join("\n");
 
     try {
       await writeToClipboard(fullMessage);
