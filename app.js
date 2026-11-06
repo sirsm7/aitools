@@ -729,14 +729,31 @@
       }
     }
 
+    let authorityLabel = "JPN MELAKA";
+    const rawSelectedPpd = elFilterPpd.value.trim();
+    if (rawSelectedPpd) {
+      authorityLabel = rawSelectedPpd.toUpperCase();
+    } else {
+      const ppdSet = new Set();
+      for (let i = 0; i < pendingList.length; i++) {
+        if (pendingList[i].ppd) {
+          ppdSet.add(pendingList[i].ppd.trim().toUpperCase());
+        }
+      }
+      if (ppdSet.size === 1) {
+        authorityLabel = Array.from(ppdSet)[0];
+      } else {
+        authorityLabel = "JPN MELAKA";
+      }
+    }
+
     const lines = [];
     lines.push("📋 SENARAI SEKOLAH BELUM SELESAI PEMAKLUMAN SEMAKAN AI TOOLS");
     lines.push(`📌 JUMLAH KESELURUHAN: ${pendingList.length} BUAH SEKOLAH`);
 
     if (primaryList.length > 0) {
       lines.push("━━━━━━━━━━━━━━━━━━");
-      lines.push("1. 🏫 SEKOLAH RENDAH");
-      lines.push(`: ${primaryList.length} buah sekolah`);
+      lines.push(`1. 🏫 SEKOLAH RENDAH: ${primaryList.length} buah sekolah`);
       lines.push("━━━━━━━━━━━━━━━━━━");
       for (let i = 0; i < primaryList.length; i++) {
         const sch = primaryList[i];
@@ -758,6 +775,7 @@
 
     lines.push("━━━━━━━━━━━━━━━━━━");
     lines.push("Terima kasih atas kerjasama semua.");
+    lines.push(authorityLabel);
 
     const fullMessage = lines.join("\n");
 
