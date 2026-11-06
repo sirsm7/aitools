@@ -33,6 +33,9 @@
   const elTableBody = document.getElementById("table-body");
   const elTableCountLabel = document.getElementById("table-count-label");
   const elBadgeViewMode = document.getElementById("badge-view-mode");
+  const elCopyActionsGroup = document.getElementById("copy-actions-group");
+  const elBtnCopyEmails = document.getElementById("btn-copy-emails");
+  const elBtnCopyList = document.getElementById("btn-copy-list");
   const elTableSubLabel = document.getElementById("table-sub-label");
   const elPaginationInfo = document.getElementById("pagination-info");
   const elBtnPrev = document.getElementById("btn-prev");
@@ -84,6 +87,23 @@
     elSyncIndicator.appendChild(dot);
     const textNode = document.createTextNode(label);
     elSyncIndicator.appendChild(textNode);
+  }
+
+  async function writeToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      textarea.style.top = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
   }
 
   function updateSchoolDatalist() {
@@ -328,6 +348,14 @@
       return true;
     });
 
+    if (elCopyActionsGroup) {
+      if (shouldDisplayTable && filteredData.length > 0) {
+        elCopyActionsGroup.classList.remove("hidden");
+      } else {
+        elCopyActionsGroup.classList.add("hidden");
+      }
+    }
+
     currentPage = 1;
     updateScorecards();
     renderTable();
@@ -343,6 +371,9 @@
     }
     if (elTableSubLabel) {
       elTableSubLabel.textContent = "Senarai institusi yang telah selesai dimaklumkan";
+    }
+    if (elCopyActionsGroup) {
+      elCopyActionsGroup.classList.add("hidden");
     }
 
     if (elSectionTable && elSearchPrompt) {
@@ -566,6 +597,62 @@
     elBtnNext.disabled = currentPage >= totalPages;
   }
 
+  async function copyFilteredEmails() {
+    if (!filteredData || filteredData.length === 0) {
+      showToast("Tiada data guru dalam senarai carian.", "info");
+      return;
+    }
+
+    const emails = [];
+    const seen = new Set();
+
+    for (let i = 0; i < filteredData.length; i++) {
+      const em = filteredData[i].email ? filteredData[i].email.trim() : "";
+      if (em && !seen.has(em.toLowerCase())) {
+        seen.add(em.toLowerCase());
+        emails.push(em);
+      }
+    }
+
+    if (emails.length === 0) {
+      showToast("Tiada alamat e-mel yang sah ditemui.", "info");
+      return;
+    }
+
+    const message = emails.join(", ");
+
+    try {
+      await writeToClipboard(message);
+      showToast(`${emails.length} alamat e-mel berjaya disalin.`, "success");
+    } catch (err) {
+      showToast("Gagal menyalin senarai e-mel ke papan keratan.", "error");
+    }
+  }
+
+  async function copyFilteredTeachersList() {
+    if (!filteredData || filteredData.length === 0) {
+      showToast("Tiada data guru dalam senarai carian.", "info");
+      return;
+    }
+
+    const headerText = "SENARAI GURU CARIAN AI-TOOLS";
+    const bodyLines = filteredData.map((item, idx) => {
+      const teacherName = item.name ? item.name.trim() : "TIADA NAMA";
+      const teacherEmail = item.email ? ` <${item.email.trim()}>` : "";
+      const schoolName = item.nama_institusi ? ` - ${item.nama_institusi.trim()}` : "";
+      return `${idx + 1}. ${teacherName}${teacherEmail}${schoolName}`;
+    });
+
+    const fullMessage = `${headerText}\nJumlah: ${filteredData.length} orang\n\n${bodyLines.join("\n")}`;
+
+    try {
+      await writeToClipboard(fullMessage);
+      showToast(`Senarai ${filteredData.length} rekod guru berjaya disalin.`, "success");
+    } catch (err) {
+      showToast("Gagal menyalin senarai nama dan e-mel guru ke papan keratan.", "error");
+    }
+  }
+
   async function copyPendingSchoolsList() {
     const selectedPpd = elFilterPpd.value.trim().toLowerCase();
     const uniquePendingSchools = new Map();
@@ -606,20 +693,7 @@
     const fullMessage = `${headerText}\n\n${bodyLines.join("\n")}`;
 
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(fullMessage);
-      } else {
-        const textarea = document.createElement("textarea");
-        textarea.value = fullMessage;
-        textarea.style.position = "fixed";
-        textarea.style.left = "-9999px";
-        textarea.style.top = "0";
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
+      await writeToClipboard(fullMessage);
       showToast(`Senarai ${pendingList.length} sekolah belum selesai berjaya disalin.`, "success");
     } catch (err) {
       showToast("Gagal menyalin senarai sekolah ke papan keratan.", "error");
@@ -699,6 +773,14 @@
     });
   }
 
+  if (elBtnCopyEmails) {
+    elBtnCopyEmails.addEventListener("click", copyFilteredEmails);
+  }
+
+  if (elBtnCopyList) {
+    elBtnCopyList.addEventListener("click", copyFilteredTeachersList);
+  }
+
   elFilterPpd.addEventListener("change", () => {
     updateSchoolDatalist();
     if (currentViewMode === "schools") {
@@ -751,6 +833,9 @@
       currentViewMode = "teachers";
       if (elBadgeViewMode) {
         elBadgeViewMode.classList.add("hidden");
+      }
+      if (elCopyActionsGroup) {
+        elCopyActionsGroup.classList.add("hidden");
       }
       if (elTableSubLabel) {
         elTableSubLabel.textContent = "Tanda kotak untuk kemas kini langsung ke Google Sheets";

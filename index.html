@@ -144,12 +144,28 @@
     </div>
 
     <section id="section-table" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hidden" aria-label="Jadual Maklumat Guru dan Sekolah">
-      <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-slate-50/50">
+      <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50">
         <div class="flex items-center gap-2 flex-wrap">
           <span id="table-count-label" class="text-xs font-semibold text-slate-600">Memuatkan data rekod...</span>
           <span id="badge-view-mode" class="hidden px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">Senarai Sekolah Terlibat</span>
         </div>
-        <span id="table-sub-label" class="text-xs text-slate-400">Tanda kotak untuk kemas kini langsung ke Google Sheets</span>
+        <div class="flex items-center gap-3 flex-wrap">
+          <div id="copy-actions-group" class="hidden flex items-center gap-2">
+            <button id="btn-copy-emails" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500" title="Salin senarai e-mel sahaja (format dipisahkan koma untuk dihantar terus)">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span>Salin E-mel</span>
+            </button>
+            <button id="btn-copy-list" type="button" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-500" title="Salin senarai nama dan e-mel guru berformat">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span>Salin Nama & E-mel</span>
+            </button>
+          </div>
+          <span id="table-sub-label" class="text-xs text-slate-400">Tanda kotak untuk kemas kini langsung ke Google Sheets</span>
+        </div>
       </div>
 
       <div class="overflow-x-auto w-full">
