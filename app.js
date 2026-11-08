@@ -431,10 +431,10 @@
 
     if (elBadgeViewMode) {
       elBadgeViewMode.classList.remove("hidden");
-      elBadgeViewMode.textContent = "Senarai Sekolah Terlibat";
+      elBadgeViewMode.textContent = "Senarai Sekolah Selesai";
     }
     if (elTableSubLabel) {
-      elTableSubLabel.textContent = "Senarai institusi yang telah selesai dimaklumkan";
+      elTableSubLabel.textContent = "Senarai sekolah dengan pengesahan semua guru selesai (100%)";
     }
     if (elCopyActionsGroup) {
       elCopyActionsGroup.classList.add("hidden");
