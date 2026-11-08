@@ -148,6 +148,59 @@
     elSchoolList.appendChild(fragment);
   }
 
+  function getSchoolAggregation(selectedPpd = "") {
+    const filterPpd = (selectedPpd || "").trim().toLowerCase();
+    const schoolMap = new Map();
+    let totalTeachers = 0;
+
+    for (let i = 0; i < allData.length; i++) {
+      const item = allData[i];
+      if (filterPpd && item.ppd && item.ppd.toLowerCase() !== filterPpd) {
+        continue;
+      }
+
+      totalTeachers++;
+
+      const key = (item.kodsekolah || item.nama_institusi || "").trim().toUpperCase();
+      if (!key) continue;
+
+      if (!schoolMap.has(key)) {
+        schoolMap.set(key, {
+          kodsekolah: item.kodsekolah ? item.kodsekolah.trim() : "-",
+          nama_institusi: item.nama_institusi ? item.nama_institusi.trim() : "-",
+          ppd: item.ppd ? item.ppd.trim() : "-",
+          totalTeachers: 0,
+          confirmedTeachers: 0,
+          order: i
+        });
+      }
+
+      const school = schoolMap.get(key);
+      school.totalTeachers++;
+      if (Boolean(item.status_pemakluman) === true) {
+        school.confirmedTeachers++;
+      }
+    }
+
+    const confirmedSchools = [];
+    const pendingSchools = [];
+
+    for (const school of schoolMap.values()) {
+      if (school.totalTeachers > 0 && school.confirmedTeachers === school.totalTeachers) {
+        confirmedSchools.push(school);
+      } else {
+        pendingSchools.push(school);
+      }
+    }
+
+    return {
+      totalSchools: schoolMap.size,
+      totalTeachers: totalTeachers,
+      confirmedSchools: confirmedSchools,
+      pendingSchools: pendingSchools
+    };
+  }
+
   async function fetchData(forceRemote = false) {
     if (window.ENV_READY) {
       await window.ENV_READY;
@@ -238,29 +291,16 @@
   function updateScorecards() {
     if (!elFilterPpd) return;
     const selectedPpd = elFilterPpd.value.trim().toLowerCase();
-    const uniqueSchools = new Set();
-    let confirmedCount = 0;
-    let totalRecords = 0;
+    const aggregation = getSchoolAggregation(selectedPpd);
 
-    for (let i = 0; i < allData.length; i++) {
-      const row = allData[i];
-      if (selectedPpd && row.ppd && row.ppd.toLowerCase() !== selectedPpd) {
-        continue;
-      }
-      totalRecords++;
-      if (row.kodsekolah) {
-        uniqueSchools.add(row.kodsekolah);
-      }
-      if (row.status_pemakluman === true) {
-        confirmedCount++;
-      }
-    }
+    const totalSchools = aggregation.totalSchools;
+    const totalTeachers = aggregation.totalTeachers;
+    const confirmedCount = aggregation.confirmedSchools.length;
+    const pendingCount = aggregation.pendingSchools.length;
+    const percentConfirmed = totalSchools > 0 ? Math.round((confirmedCount / totalSchools) * 100) : 0;
 
-    const pendingCount = totalRecords - confirmedCount;
-    const percentConfirmed = totalRecords > 0 ? Math.round((confirmedCount / totalRecords) * 100) : 0;
-
-    if (elStatSchools) elStatSchools.textContent = uniqueSchools.size.toLocaleString("ms-MY");
-    if (elStatEmails) elStatEmails.textContent = totalRecords.toLocaleString("ms-MY");
+    if (elStatSchools) elStatSchools.textContent = totalSchools.toLocaleString("ms-MY");
+    if (elStatEmails) elStatEmails.textContent = totalTeachers.toLocaleString("ms-MY");
     if (elStatConfirmed) elStatConfirmed.textContent = confirmedCount.toLocaleString("ms-MY");
     if (elStatPercent) elStatPercent.textContent = `${percentConfirmed}%`;
     if (elStatPending) elStatPending.textContent = pendingCount.toLocaleString("ms-MY");
@@ -407,31 +447,20 @@
 
     const selectedPpd = elFilterPpd ? elFilterPpd.value.trim().toLowerCase() : "";
     const querySearch = elInputSearch ? elInputSearch.value.trim().toLowerCase() : "";
-    const uniqueConfirmedSchools = new Map();
 
-    for (let i = 0; i < allData.length; i++) {
-      const item = allData[i];
-      if (item.status_pemakluman !== true) continue;
-      if (selectedPpd && item.ppd && item.ppd.toLowerCase() !== selectedPpd) continue;
+    const aggregation = getSchoolAggregation(selectedPpd);
+    let list = aggregation.confirmedSchools;
 
-      if (querySearch) {
+    if (querySearch) {
+      list = list.filter((item) => {
         const matchName = item.nama_institusi ? item.nama_institusi.toLowerCase().includes(querySearch) : false;
         const matchKod = item.kodsekolah ? item.kodsekolah.toLowerCase().includes(querySearch) : false;
         const matchCombined = `${item.kodsekolah || ""} - ${item.nama_institusi || ""}`.toLowerCase().includes(querySearch);
-        if (!matchName && !matchKod && !matchCombined) continue;
-      }
-
-      const key = (item.kodsekolah || item.nama_institusi || "").trim().toUpperCase();
-      if (key && !uniqueConfirmedSchools.has(key)) {
-        uniqueConfirmedSchools.set(key, {
-          kodsekolah: item.kodsekolah ? item.kodsekolah.trim() : "-",
-          nama_institusi: item.nama_institusi ? item.nama_institusi.trim() : "-",
-          ppd: item.ppd ? item.ppd.trim() : "-"
-        });
-      }
+        return matchName || matchKod || matchCombined;
+      });
     }
 
-    schoolListData = Array.from(uniqueConfirmedSchools.values()).sort((a, b) => {
+    schoolListData = list.sort((a, b) => {
       const cmpPpd = a.ppd.localeCompare(b.ppd);
       if (cmpPpd !== 0) return cmpPpd;
       return a.nama_institusi.localeCompare(b.nama_institusi);
@@ -710,25 +739,8 @@
   async function copyPendingSchoolsList() {
     if (!elFilterPpd) return;
     const selectedPpd = elFilterPpd.value.trim().toLowerCase();
-    const uniquePendingSchools = new Map();
-
-    for (let i = 0; i < allData.length; i++) {
-      const item = allData[i];
-      if (item.status_pemakluman === true) continue;
-      if (selectedPpd && item.ppd && item.ppd.toLowerCase() !== selectedPpd) continue;
-
-      const key = (item.kodsekolah || item.nama_institusi || "").trim().toUpperCase();
-      if (key && !uniquePendingSchools.has(key)) {
-        uniquePendingSchools.set(key, {
-          kodsekolah: item.kodsekolah ? item.kodsekolah.trim() : "",
-          nama_institusi: item.nama_institusi ? item.nama_institusi.trim() : "",
-          ppd: item.ppd ? item.ppd.trim() : "",
-          order: i
-        });
-      }
-    }
-
-    const pendingList = Array.from(uniquePendingSchools.values());
+    const aggregation = getSchoolAggregation(selectedPpd);
+    const pendingList = [...aggregation.pendingSchools];
 
     if (pendingList.length === 0) {
       showToast("Tiada sekolah yang belum selesai pemakluman.", "info");
