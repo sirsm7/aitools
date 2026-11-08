@@ -3,23 +3,33 @@
 
   let dbPromise = null;
 
-  function getDB() {
+  async function resolveConfig() {
+    if (window.ENV_READY) {
+      await window.ENV_READY;
+    }
+    return window.__ENV || window.APP_CONFIG || {
+      DB_NAME: "SchoolDashboardDB",
+      DB_VERSION: 1,
+      STORE_NAME: "teachers_data",
+      CACHE_TTL_MS: 300000
+    };
+  }
+
+  async function getDB() {
     if (dbPromise) return dbPromise;
+    const cfg = await resolveConfig();
     dbPromise = new Promise((resolve) => {
       if (!window.indexedDB) {
         resolve(null);
         return;
       }
       try {
-        const request = window.indexedDB.open(
-          window.APP_CONFIG.DB_NAME,
-          window.APP_CONFIG.DB_VERSION
-        );
+        const request = window.indexedDB.open(cfg.DB_NAME, cfg.DB_VERSION);
 
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
-          if (!db.objectStoreNames.contains(window.APP_CONFIG.STORE_NAME)) {
-            db.createObjectStore(window.APP_CONFIG.STORE_NAME, { keyPath: "key" });
+          if (!db.objectStoreNames.contains(cfg.STORE_NAME)) {
+            db.createObjectStore(cfg.STORE_NAME, { keyPath: "key" });
           }
         };
 
@@ -30,7 +40,7 @@
         request.onerror = () => {
           resolve(null);
         };
-      } catch (err) {
+      } catch (_) {
         resolve(null);
       }
     });
@@ -44,14 +54,15 @@
       updatedAt: Date.now()
     };
     try {
+      const cfg = await resolveConfig();
       const db = await getDB();
       if (!db) {
         window.__memoryCache[key] = record;
         return true;
       }
       return new Promise((resolve) => {
-        const tx = db.transaction(window.APP_CONFIG.STORE_NAME, "readwrite");
-        const store = tx.objectStore(window.APP_CONFIG.STORE_NAME);
+        const tx = db.transaction(cfg.STORE_NAME, "readwrite");
+        const store = tx.objectStore(cfg.STORE_NAME);
         store.put(record);
         tx.oncomplete = () => resolve(true);
         tx.onerror = () => {
@@ -59,14 +70,15 @@
           resolve(false);
         };
       });
-    } catch (err) {
+    } catch (_) {
       window.__memoryCache[key] = record;
       return false;
     }
   }
 
   async function get(key) {
-    const ttl = (window.APP_CONFIG && window.APP_CONFIG.CACHE_TTL_MS) ? window.APP_CONFIG.CACHE_TTL_MS : 300000;
+    const cfg = await resolveConfig();
+    const ttl = cfg.CACHE_TTL_MS || 300000;
     try {
       const db = await getDB();
       let record = null;
@@ -74,8 +86,8 @@
         record = window.__memoryCache[key] || null;
       } else {
         record = await new Promise((resolve) => {
-          const tx = db.transaction(window.APP_CONFIG.STORE_NAME, "readonly");
-          const store = tx.objectStore(window.APP_CONFIG.STORE_NAME);
+          const tx = db.transaction(cfg.STORE_NAME, "readonly");
+          const store = tx.objectStore(cfg.STORE_NAME);
           const req = store.get(key);
           req.onsuccess = () => resolve(req.result || null);
           req.onerror = () => resolve(window.__memoryCache[key] || null);
@@ -90,7 +102,7 @@
         updatedAt: record.updatedAt,
         isStale: isStale
       };
-    } catch (err) {
+    } catch (_) {
       const memRecord = window.__memoryCache[key] || null;
       if (!memRecord) return null;
       return {
@@ -104,16 +116,17 @@
   async function clear() {
     window.__memoryCache = {};
     try {
+      const cfg = await resolveConfig();
       const db = await getDB();
       if (!db) return true;
       return new Promise((resolve) => {
-        const tx = db.transaction(window.APP_CONFIG.STORE_NAME, "readwrite");
-        const store = tx.objectStore(window.APP_CONFIG.STORE_NAME);
+        const tx = db.transaction(cfg.STORE_NAME, "readwrite");
+        const store = tx.objectStore(cfg.STORE_NAME);
         store.clear();
         tx.oncomplete = () => resolve(true);
         tx.onerror = () => resolve(false);
       });
-    } catch (err) {
+    } catch (_) {
       return false;
     }
   }

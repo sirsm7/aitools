@@ -1,7 +1,4 @@
 (function () {
-  const CONFIG = window.APP_CONFIG;
-  const IDBCache = window.IDBCache;
-
   let allData = [];
   let filteredData = [];
   let schoolListData = [];
@@ -43,7 +40,16 @@
   const elPageIndicator = document.getElementById("page-indicator");
   const elToastContainer = document.getElementById("toast-container");
 
+  async function getGasEndpointUrl() {
+    if (window.ENV_READY) {
+      await window.ENV_READY;
+    }
+    const env = window.__ENV || window.APP_CONFIG || {};
+    return env.GAS_ENDPOINT_URL || "";
+  }
+
   function showToast(message, type = "success") {
+    if (!elToastContainer) return;
     const toast = document.createElement("div");
     toast.className = "pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-xs font-semibold text-white transition-opacity duration-300";
     if (type === "success") {
@@ -67,6 +73,7 @@
   }
 
   function setSyncStatus(state, label) {
+    if (!elSyncIndicator) return;
     while (elSyncIndicator.firstChild) {
       elSyncIndicator.removeChild(elSyncIndicator.firstChild);
     }
@@ -107,7 +114,7 @@
   }
 
   function updateSchoolDatalist() {
-    if (!elSchoolList) return;
+    if (!elSchoolList || !elFilterPpd) return;
     while (elSchoolList.firstChild) {
       elSchoolList.removeChild(elSchoolList.firstChild);
     }
@@ -117,7 +124,7 @@
 
     for (let i = 0; i < allData.length; i++) {
       const item = allData[i];
-      if (selectedPpd && item.ppd.toLowerCase() !== selectedPpd) {
+      if (selectedPpd && item.ppd && item.ppd.toLowerCase() !== selectedPpd) {
         continue;
       }
       if (item.nama_institusi && !uniqueSchools.has(item.nama_institusi)) {
@@ -142,10 +149,13 @@
   }
 
   async function fetchData(forceRemote = false) {
+    if (window.ENV_READY) {
+      await window.ENV_READY;
+    }
     setSyncStatus("syncing", "Menyegerak data...");
 
-    if (!forceRemote) {
-      const cached = await IDBCache.get("teachers_data_cache");
+    if (!forceRemote && window.IDBCache) {
+      const cached = await window.IDBCache.get("teachers_data_cache");
       if (cached && cached.data && Array.isArray(cached.data)) {
         allData = cached.data;
         updateSchoolDatalist();
@@ -168,8 +178,16 @@
 
   async function fetchFromNetwork() {
     try {
-      const response = await fetch(CONFIG.GAS_ENDPOINT_URL, {
+      const endpoint = await getGasEndpointUrl();
+      if (!endpoint) {
+        setSyncStatus("error", "URL Pelayan Tiada");
+        showToast("Konfigurasi GAS_ENDPOINT_URL tidak ditemui.", "error");
+        return;
+      }
+
+      const response = await fetch(endpoint, {
         method: "GET",
+        redirect: "follow",
         headers: {
           "Content-Type": "text/plain"
         }
@@ -180,7 +198,9 @@
 
       if (result.status === "success" && Array.isArray(result.data)) {
         allData = result.data;
-        await IDBCache.set("teachers_data_cache", allData);
+        if (window.IDBCache) {
+          await window.IDBCache.set("teachers_data_cache", allData);
+        }
         updateSchoolDatalist();
         updateScorecards();
         if (currentViewMode === "schools") {
@@ -193,26 +213,30 @@
         setSyncStatus("error", "Ralat format data");
         showToast("Gagal membaca struktur data pelayan", "error");
       }
-    } catch (err) {
-      const cached = await IDBCache.get("teachers_data_cache");
-      if (cached && cached.data && Array.isArray(cached.data) && allData.length === 0) {
-        allData = cached.data;
-        updateSchoolDatalist();
-        updateScorecards();
-        if (currentViewMode === "schools") {
-          showConfirmedSchoolsView();
-        } else {
-          applyFilters();
+    } catch (_) {
+      if (window.IDBCache) {
+        const cached = await window.IDBCache.get("teachers_data_cache");
+        if (cached && cached.data && Array.isArray(cached.data) && allData.length === 0) {
+          allData = cached.data;
+          updateSchoolDatalist();
+          updateScorecards();
+          if (currentViewMode === "schools") {
+            showConfirmedSchoolsView();
+          } else {
+            applyFilters();
+          }
+          setSyncStatus("ready", "Data Tempatan");
+          showToast("Gagal berhubung dengan pelayan Google Sheets", "error");
+          return;
         }
-        setSyncStatus("ready", "Data Tempatan");
-      } else {
-        setSyncStatus("error", "Luar Talian");
       }
+      setSyncStatus("error", "Luar Talian");
       showToast("Gagal berhubung dengan pelayan Google Sheets", "error");
     }
   }
 
   function updateScorecards() {
+    if (!elFilterPpd) return;
     const selectedPpd = elFilterPpd.value.trim().toLowerCase();
     const uniqueSchools = new Set();
     let confirmedCount = 0;
@@ -235,11 +259,11 @@
     const pendingCount = totalRecords - confirmedCount;
     const percentConfirmed = totalRecords > 0 ? Math.round((confirmedCount / totalRecords) * 100) : 0;
 
-    elStatSchools.textContent = uniqueSchools.size.toLocaleString("ms-MY");
-    elStatEmails.textContent = totalRecords.toLocaleString("ms-MY");
-    elStatConfirmed.textContent = confirmedCount.toLocaleString("ms-MY");
-    elStatPercent.textContent = `${percentConfirmed}%`;
-    elStatPending.textContent = pendingCount.toLocaleString("ms-MY");
+    if (elStatSchools) elStatSchools.textContent = uniqueSchools.size.toLocaleString("ms-MY");
+    if (elStatEmails) elStatEmails.textContent = totalRecords.toLocaleString("ms-MY");
+    if (elStatConfirmed) elStatConfirmed.textContent = confirmedCount.toLocaleString("ms-MY");
+    if (elStatPercent) elStatPercent.textContent = `${percentConfirmed}%`;
+    if (elStatPending) elStatPending.textContent = pendingCount.toLocaleString("ms-MY");
   }
 
   function renderTableHeader() {
@@ -298,10 +322,10 @@
       elTableSubLabel.textContent = "Tanda kotak untuk kemas kini langsung ke Google Sheets";
     }
 
-    const selectedPpd = elFilterPpd.value.trim().toLowerCase();
-    const querySearch = elInputSearch.value.trim().toLowerCase();
-    const queryTeacher = elInputTeacherSearch.value.trim().toLowerCase();
-    const selectedStatus = elFilterStatus.value;
+    const selectedPpd = elFilterPpd ? elFilterPpd.value.trim().toLowerCase() : "";
+    const querySearch = elInputSearch ? elInputSearch.value.trim().toLowerCase() : "";
+    const queryTeacher = elInputTeacherSearch ? elInputTeacherSearch.value.trim().toLowerCase() : "";
+    const selectedStatus = elFilterStatus ? elFilterStatus.value : "";
 
     const hasSearchQuery = querySearch.length > 0 || queryTeacher.length > 0;
     const shouldDisplayTable = hasSearchQuery || selectedStatus.length > 0;
@@ -381,8 +405,8 @@
       elSearchPrompt.classList.add("hidden");
     }
 
-    const selectedPpd = elFilterPpd.value.trim().toLowerCase();
-    const querySearch = elInputSearch.value.trim().toLowerCase();
+    const selectedPpd = elFilterPpd ? elFilterPpd.value.trim().toLowerCase() : "";
+    const querySearch = elInputSearch ? elInputSearch.value.trim().toLowerCase() : "";
     const uniqueConfirmedSchools = new Map();
 
     for (let i = 0; i < allData.length; i++) {
@@ -423,6 +447,7 @@
   }
 
   function renderTable() {
+    if (!elTableBody || !elTableCountLabel) return;
     while (elTableBody.firstChild) {
       elTableBody.removeChild(elTableBody.firstChild);
     }
@@ -508,6 +533,7 @@
   }
 
   function renderSchoolsTable() {
+    if (!elTableBody || !elTableCountLabel) return;
     while (elTableBody.firstChild) {
       elTableBody.removeChild(elTableBody.firstChild);
     }
@@ -577,6 +603,7 @@
   }
 
   function renderPagination(totalRecords) {
+    if (!elPaginationInfo || !elBtnPrev || !elBtnNext || !elPageIndicator) return;
     if (totalRecords === 0) {
       elPaginationInfo.textContent = "Tiada rekod";
       elBtnPrev.disabled = true;
@@ -624,7 +651,7 @@
     try {
       await writeToClipboard(message);
       showToast(`${emails.length} alamat e-mel berjaya disalin.`, "success");
-    } catch (err) {
+    } catch (_) {
       showToast("Gagal menyalin senarai e-mel ke papan keratan.", "error");
     }
   }
@@ -648,7 +675,7 @@
     try {
       await writeToClipboard(fullMessage);
       showToast(`Senarai ${filteredData.length} rekod guru berjaya disalin.`, "success");
-    } catch (err) {
+    } catch (_) {
       showToast("Gagal menyalin senarai nama dan e-mel guru ke papan keratan.", "error");
     }
   }
@@ -681,6 +708,7 @@
   }
 
   async function copyPendingSchoolsList() {
+    if (!elFilterPpd) return;
     const selectedPpd = elFilterPpd.value.trim().toLowerCase();
     const uniquePendingSchools = new Map();
 
@@ -782,7 +810,7 @@
     try {
       await writeToClipboard(fullMessage);
       showToast(`Senarai ${pendingList.length} sekolah belum selesai berjaya disalin.`, "success");
-    } catch (err) {
+    } catch (_) {
       showToast("Gagal menyalin senarai sekolah ke papan keratan.", "error");
     }
   }
@@ -797,13 +825,21 @@
 
     allData[recordIndex].status_pemakluman = nextStatus;
     updateScorecards();
-    await IDBCache.set("teachers_data_cache", allData);
+    if (window.IDBCache) {
+      await window.IDBCache.set("teachers_data_cache", allData);
+    }
 
     checkbox.disabled = true;
 
     try {
-      const response = await fetch(CONFIG.GAS_ENDPOINT_URL, {
+      const endpoint = await getGasEndpointUrl();
+      if (!endpoint) {
+        throw new Error("Konfigurasi GAS_ENDPOINT_URL tiada");
+      }
+
+      const response = await fetch(endpoint, {
         method: "POST",
+        redirect: "follow",
         headers: {
           "Content-Type": "text/plain"
         },
@@ -821,11 +857,13 @@
       } else {
         throw new Error(result.message || "Ralat kemaskini");
       }
-    } catch (err) {
+    } catch (_) {
       allData[recordIndex].status_pemakluman = !nextStatus;
       checkbox.checked = !nextStatus;
       updateScorecards();
-      await IDBCache.set("teachers_data_cache", allData);
+      if (window.IDBCache) {
+        await window.IDBCache.set("teachers_data_cache", allData);
+      }
       showToast(`Gagal mengemas kini ${targetEmail}. Tindakan dikembalikan.`, "error");
     } finally {
       checkbox.disabled = false;
@@ -868,23 +906,27 @@
     elBtnCopyList.addEventListener("click", copyFilteredTeachersList);
   }
 
-  elFilterPpd.addEventListener("change", () => {
-    updateSchoolDatalist();
-    if (currentViewMode === "schools") {
-      showConfirmedSchoolsView();
-    } else {
-      applyFilters();
-    }
-  });
+  if (elFilterPpd) {
+    elFilterPpd.addEventListener("change", () => {
+      updateSchoolDatalist();
+      if (currentViewMode === "schools") {
+        showConfirmedSchoolsView();
+      } else {
+        applyFilters();
+      }
+    });
+  }
 
-  elFilterStatus.addEventListener("change", () => {
-    if (elFilterStatus.value === "done") {
-      showConfirmedSchoolsView();
-    } else {
-      currentViewMode = "teachers";
-      applyFilters();
-    }
-  });
+  if (elFilterStatus) {
+    elFilterStatus.addEventListener("change", () => {
+      if (elFilterStatus.value === "done") {
+        showConfirmedSchoolsView();
+      } else {
+        currentViewMode = "teachers";
+        applyFilters();
+      }
+    });
+  }
 
   let searchTimeout = null;
   function handleSearchDebounce() {
@@ -898,25 +940,29 @@
     }, 150);
   }
 
-  elInputSearch.addEventListener("input", (event) => {
-    handleAutoCapsInput(event);
-    handleSearchDebounce();
-  });
+  if (elInputSearch) {
+    elInputSearch.addEventListener("input", (event) => {
+      handleAutoCapsInput(event);
+      handleSearchDebounce();
+    });
+  }
 
-  elInputTeacherSearch.addEventListener("input", (event) => {
-    handleAutoCapsInput(event);
-    if (currentViewMode === "schools") {
-      currentViewMode = "teachers";
-    }
-    handleSearchDebounce();
-  });
+  if (elInputTeacherSearch) {
+    elInputTeacherSearch.addEventListener("input", (event) => {
+      handleAutoCapsInput(event);
+      if (currentViewMode === "schools") {
+        currentViewMode = "teachers";
+      }
+      handleSearchDebounce();
+    });
+  }
 
   if (elBtnReset) {
     elBtnReset.addEventListener("click", () => {
-      elFilterPpd.value = "";
-      elInputSearch.value = "";
-      elInputTeacherSearch.value = "";
-      elFilterStatus.value = "";
+      if (elFilterPpd) elFilterPpd.value = "";
+      if (elInputSearch) elInputSearch.value = "";
+      if (elInputTeacherSearch) elInputTeacherSearch.value = "";
+      if (elFilterStatus) elFilterStatus.value = "";
       currentViewMode = "teachers";
       if (elBadgeViewMode) {
         elBadgeViewMode.classList.add("hidden");
@@ -933,33 +979,39 @@
     });
   }
 
-  elBtnPrev.addEventListener("click", () => {
-    if (currentPage > 1) {
-      currentPage--;
-      if (currentViewMode === "schools") {
-        renderSchoolsTable();
-      } else {
-        renderTable();
+  if (elBtnPrev) {
+    elBtnPrev.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        if (currentViewMode === "schools") {
+          renderSchoolsTable();
+        } else {
+          renderTable();
+        }
       }
-    }
-  });
+    });
+  }
 
-  elBtnNext.addEventListener("click", () => {
-    const list = currentViewMode === "schools" ? schoolListData : filteredData;
-    const totalPages = Math.ceil(list.length / pageSize);
-    if (currentPage < totalPages) {
-      currentPage++;
-      if (currentViewMode === "schools") {
-        renderSchoolsTable();
-      } else {
-        renderTable();
+  if (elBtnNext) {
+    elBtnNext.addEventListener("click", () => {
+      const list = currentViewMode === "schools" ? schoolListData : filteredData;
+      const totalPages = Math.ceil(list.length / pageSize);
+      if (currentPage < totalPages) {
+        currentPage++;
+        if (currentViewMode === "schools") {
+          renderSchoolsTable();
+        } else {
+          renderTable();
+        }
       }
-    }
-  });
+    });
+  }
 
-  elBtnRefresh.addEventListener("click", () => {
-    fetchData(true);
-  });
+  if (elBtnRefresh) {
+    elBtnRefresh.addEventListener("click", () => {
+      fetchData(true);
+    });
+  }
 
   const SESSION_KEY = "dashboard_session_active";
   let isSessionActive = false;
@@ -969,7 +1021,7 @@
     if (!isSessionActive) {
       sessionStorage.setItem(SESSION_KEY, "1");
     }
-  } catch (err) {
+  } catch (_) {
     isSessionActive = false;
   }
 
